@@ -32,11 +32,12 @@ app.get('/datos', (req, res) => {
             console.error('Error en la consulta:', err);
             res.status(500).send('Error al consultar datos');
         } else {
-            console.log('Datos obtenidos:', results); // Esto imprime los datos en la consola
-            res.json(results);
+            console.log('Datos obtenidos:', results); // Verifica los resultados aquí
+            res.json(results); // Devuelve los datos al cliente
         }
     });
 });
+
 
 
 app.listen(port, '0.0.0.0', () => {
