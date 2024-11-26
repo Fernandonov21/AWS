@@ -1,1 +1,24 @@
 
+name: Node.js CI
+
+on:
+    push:
+        branches: [ main ]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: 'Configurar clave SSH'
+              run: |
+                echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
+                chmod 400 key.pem
+            - name: 'Conectar a EC2 y borrar carpeta'
+              run: |
+                ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-107-22-5-182.compute-1.amazonaws.com "rm -rf /web/AWS"
+            - name: 'Clonar repositorio en EC2'
+              run: |
+                ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-107-22-5-182.compute-1.amazonaws.com "git clone https://github.com/Fernandonov21/AWS.git /web/AWS"
+            - name: 'Eliminar clave SSH'
+              run: rm key.pem
