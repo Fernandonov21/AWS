@@ -40,6 +40,7 @@ app.get('/datos', (req, res) => {
 
 
 
+
 app.listen(port, '0.0.0.0', () => {
     console.log(`Servidor escuchando en http://0.0.0.0:${port}`);
 });
