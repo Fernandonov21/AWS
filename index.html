@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beautiful Webpage</title>
+    <title>Melany Tienda</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -35,6 +35,18 @@
         main {
             padding: 20px;
         }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
         footer {
             background-color: #333;
             color: white;
@@ -48,7 +60,7 @@
 </head>
 <body>
     <header>
-        <h1>Welcome to My melany tienda</h1>
+        <h1>Welcome to My Melany Tienda</h1>
     </header>
     <nav>
         <a href="#home">Home</a>
@@ -57,11 +69,43 @@
         <a href="#contact">Contact</a>
     </nav>
     <main>
-        <h2>Home</h2>
-        <p>Tienda de la melany guapa.</p>
+        <h2>Usuarios</h2>
+        <table id="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Fecha de Registro</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Los datos se insertarán aquí -->
+            </tbody>
+        </table>
     </main>
     <footer>
         <p>&copy; 2023 Beautiful Webpage. All rights reserved.</p>
     </footer>
+    <script>
+        // Fetch datos y construir la tabla
+        fetch('/datos')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Datos recibidos:', data); // Verifica la estructura aquí
+                const tableBody = document.querySelector('#data-table tbody');
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.id_usuario}</td>
+                        <td>${row.nombre}</td>
+                        <td>${row.correo}</td>
+                        <td>${row.fecha_registro}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            })
+            .catch(err => console.error('Error al cargar los datos:', err));
+    </script>
 </body>
 </html>
