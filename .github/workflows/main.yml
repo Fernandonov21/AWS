@@ -17,29 +17,35 @@ jobs:
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 400 key.pem
 
-      # Lógica para ramas
+      # Configurar entorno de despliegue según la rama
       - name: 'Configurar entorno de despliegue'
         id: config
         run: |
           if [ "${{ github.ref_name }}" == "main" ]; then
-            echo "hosts=ec2-user@ec2-35-170-201-125.compute-1.amazonaws.com ec2-user@ec2-35-171-26-51.compute-1.amazonaws.com ec2-user@ec2-54-164-223-131.compute-1.amazonaws.com" >> $GITHUB_ENV
+            echo "hosts=ec2-user@ec2-44-208-35-50.compute-1.amazonaws.com ec2-user@ec2-34-238-38-153.compute-1.amazonaws.com ec2-user@ec2-54-164-223-131.compute-1.amazonaws.com" >> $GITHUB_ENV
           elif [ "${{ github.ref_name }}" == "test" ]; then
             echo "hosts=ec2-user@ec2-52-207-211-41.compute-1.amazonaws.com" >> $GITHUB_ENV
           fi
 
-      # Despliegue a las instancias correspondientes
+      # Desplegar en las instancias correspondientes
       - name: 'Desplegar en las instancias'
         run: |
           for host in $hosts; do
             echo "Desplegando en $host"
-            ssh -o StrictHostKeyChecking=no -i key.pem $host "rm -rf /var/www/html"
-            ssh -o StrictHostKeyChecking=no -i key.pem $host "git clone https://github.com/Fernandonov21/AWS.git /var/www/html"
+            
+            # Eliminar contenido existente
+            ssh -o StrictHostKeyChecking=no -i key.pem $host "rm -rf /web/AWS"
+            
+            # Clonar el repositorio
+            ssh -o StrictHostKeyChecking=no -i key.pem $host "git clone https://github.com/Fernandonov21/AWS.git /web/AWS"
+            
+            # Procesar HTML dinámico
             ssh -o StrictHostKeyChecking=no -i key.pem $host <<'EOF'
-              HOSTNAME=$(hostname -f)
-              sed -i "s/{{HOSTNAME}}/$HOSTNAME/g" /var/www/html/index.html
-            EOF
+HOSTNAME=$(hostname -f)
+sed -i "s/{{HOSTNAME}}/$HOSTNAME/g" /web/AWS/index.html
+EOF
           done
 
-      # Limpieza
+      # Limpieza final
       - name: 'Eliminar clave SSH'
         run: rm key.pem
