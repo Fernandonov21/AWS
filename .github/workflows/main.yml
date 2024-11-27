@@ -12,30 +12,19 @@ jobs:
             - name: 'Configurando SSH'
               run: |
                 echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
-                
-                chmod 400 key.pem
-                
-            - name: 'Conectar a EC2 y Actualizando repositorio'
-              run: |
-                ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-35-170-201-125.compute-1.amazonaws.com "rm -rf  /var/www/html"
-            - name: 'Clonar repositorio en EC2'
-              run: |
-                ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-35-170-201-125.compute-1.amazonaws.com "git clone https://github.com/Fernandonov21/AWS.git /var/www/html"
-            - name: 'Eliminar clave SSH'
-              run: rm key.pem
-              
-            - name: 'Configurando SSH'
-              run: |
-                echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
-                
                 chmod 400 key.pem
 
             - name: 'Conectar a EC2 y Actualizando repositorio'
               run: |
-                ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-35-171-26-51.compute-1.amazonaws.com "rm -rf  /var/www/html"
+                ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-35-171-26-51.compute-1.amazonaws.com "rm -rf /var/www/html"
+
             - name: 'Clonar repositorio en EC2'
               run: |
                 ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-35-171-26-51.compute-1.amazonaws.com "git clone https://github.com/Fernandonov21/AWS.git /var/www/html"
+
+            - name: 'Ejecutar script de despliegue en EC2'
+              run: |
+                ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-35-171-26-51.compute-1.amazonaws.com "bash /var/www/html/deploy.sh"
+
             - name: 'Eliminar clave SSH'
               run: rm key.pem
-              
