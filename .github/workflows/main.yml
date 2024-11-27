@@ -2,42 +2,44 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - test
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        stage: [QA, Production]
-        instance:
-          - { name: "Instancia 1", address: "ec2-34-238-38-153.compute-1.amazonaws.com" }
-          - { name: "Instancia 2", address: "ec2-44-208-35-50.compute-1.amazonaws.com" }
 
     steps:
-      # Configuración inicial
+      # Configuración inicial de SSH
       - name: 'Configurando SSH'
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 400 key.pem
 
-      # Despliegue
-      - name: "Eliminar contenido en {{ matrix.stage }} - {{ matrix.instance.name }}"
+      # Lógica para ramas
+      - name: 'Configurar entorno de despliegue'
+        id: config
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "rm -rf /web/AWS"
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "hosts=ec2-user@ec2-35-170-201-125.compute-1.amazonaws.com ec2-user@ec2-35-171-26-51.compute-1.amazonaws.com ec2-user@ec2-54-164-223-131.compute-1.amazonaws.com" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" == "test" ]; then
+            echo "hosts=ec2-user@ec2-52-207-211-41.compute-1.amazonaws.com" >> $GITHUB_ENV
+          fi
 
-      - name: "Clonar repositorio en {{ matrix.stage }} - {{ matrix.instance.name }}"
+      # Despliegue a las instancias correspondientes
+      - name: 'Desplegar en las instancias'
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "git clone https://github.com/Fernandonov21/AWS.git /web/AWS"
-
-      - name: "Procesar HTML dinámico en {{ matrix.stage }} - {{ matrix.instance.name }}"
-        run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} <<'EOF'
-            HOSTNAME=$(hostname -f)
-            sed -i "s/{{HOSTNAME}}/$HOSTNAME/g" /web/AWS/index.html
-          EOF
+          for host in $hosts; do
+            echo "Desplegando en $host"
+            ssh -o StrictHostKeyChecking=no -i key.pem $host "rm -rf /var/www/html"
+            ssh -o StrictHostKeyChecking=no -i key.pem $host "git clone https://github.com/Fernandonov21/AWS.git /var/www/html"
+            ssh -o StrictHostKeyChecking=no -i key.pem $host <<'EOF'
+              HOSTNAME=$(hostname -f)
+              sed -i "s/{{HOSTNAME}}/$HOSTNAME/g" /var/www/html/index.html
+            EOF
+          done
 
       # Limpieza
       - name: 'Eliminar clave SSH'
-        if: always()
         run: rm key.pem
