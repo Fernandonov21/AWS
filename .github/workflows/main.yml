@@ -1,50 +1,43 @@
 name: Node.js CI
 
 on:
-    push:
-        branches: [ main ]
+  push:
+    branches: [ main ]
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        stage: [QA, Production]
+        instance:
+          - { name: "Instancia 1", address: "ec2-34-238-38-153.compute-1.amazonaws.com" }
+          - { name: "Instancia 2", address: "ec2-44-208-35-50.compute-1.amazonaws.com" }
 
-        steps:
-            - name: 'Configurando SSH'
-              run: |
-                echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
-                chmod 400 key.pem
-                
-            # Operaciones para la primera instancia
-            - name: 'Eliminar contenido en EC2 (Instancia 1)'
-              run: |
-                ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-34-238-38-153.compute-1.amazonaws.com "rm -rf /web/AWS"
+    steps:
+      # Configuración inicial
+      - name: 'Configurando SSH'
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
+          chmod 400 key.pem
 
-            - name: 'Clonar repositorio en EC2 (Instancia 1)'
-              run: |
-                ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-34-238-38-153.compute-1.amazonaws.com "git clone https://github.com/Fernandonov21/AWS.git /web/AWS"
+      # Despliegue
+      - name: "Eliminar contenido en {{ matrix.stage }} - {{ matrix.instance.name }}"
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "rm -rf /web/AWS"
 
-            - name: 'Procesar HTML dinámico en EC2 (Instancia 1)'
-              run: |
-                ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-34-238-38-153.compute-1.amazonaws.com <<'EOF'
-                  HOSTNAME=$(hostname -f)
-                  sed -i "s/{{HOSTNAME}}/$HOSTNAME/g" /web/AWS/index.html
-                EOF
+      - name: "Clonar repositorio en {{ matrix.stage }} - {{ matrix.instance.name }}"
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "git clone https://github.com/Fernandonov21/AWS.git /web/AWS"
 
-            # Operaciones para la segunda instancia
-            - name: 'Eliminar contenido en EC2 (Instancia 2)'
-              run: |
-                ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-44-208-35-50.compute-1.amazonaws.com "rm -rf /web/AWS"
+      - name: "Procesar HTML dinámico en {{ matrix.stage }} - {{ matrix.instance.name }}"
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} <<'EOF'
+            HOSTNAME=$(hostname -f)
+            sed -i "s/{{HOSTNAME}}/$HOSTNAME/g" /web/AWS/index.html
+          EOF
 
-            - name: 'Clonar repositorio en EC2 (Instancia 2)'
-              run: |
-                ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-44-208-35-50.compute-1.amazonaws.com "git clone https://github.com/Fernandonov21/AWS.git /web/AWS"
-
-            - name: 'Procesar HTML dinámico en EC2 (Instancia 2)'
-              run: |
-                ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-44-208-35-50.compute-1.amazonaws.com <<'EOF'
-                  HOSTNAME=$(hostname -f)
-                  sed -i "s/{{HOSTNAME}}/$HOSTNAME/g" /web/AWS/index.html
-                EOF
-
-            - name: 'Eliminar clave SSH'
-              run: rm key.pem
+      # Limpieza
+      - name: 'Eliminar clave SSH'
+        if: always()
+        run: rm key.pem
