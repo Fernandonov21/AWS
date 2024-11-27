@@ -1,3 +1,19 @@
+#!/bin/bash
+# Actualizar paquetes
+yum update -y
+
+# Instalar Apache
+yum install -y httpd
+
+# Iniciar y habilitar Apache
+systemctl start httpd.service
+systemctl enable httpd.service
+
+# Obtener la IP de la instancia
+INSTANCE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+
+# Generar el contenido HTML dinámico
+cat <<EOL > /var/www/html/index.html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,76 +21,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Melany Tienda</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f0f0f0;
-            color: #333;
-        }
-        header {
-            background-color: #4CAF50;
-            color: white;
-            padding: 1em;
-            text-align: center;
-            font-size: 1.5em;
-            font-weight: bold;
-        }
-        nav {
-            display: flex;
-            justify-content: center;
-            background-color: #333;
-        }
-        nav a {
-            color: white;
-            padding: 14px 20px;
-            text-decoration: none;
-            font-size: 1em;
-        }
-        nav a:hover {
-            background-color: #4CAF50;
-            color: white;
-            transition: 0.3s;
-        }
-        main {
-            padding: 20px;
-            text-align: center;
-        }
-        footer {
-            background-color: #333;
-            color: white;
-            text-align: center;
-            padding: 10px;
-            position: fixed;
-            width: 100%;
-            bottom: 0;
-            font-size: 0.9em;
-        }
-        .welcome-message {
-            margin-top: 50px;
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #4CAF50;
-        }
-        .description {
-            font-size: 1.2em;
-            margin-top: 10px;
-            color: #555;
-        }
-        .cta-button {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            text-decoration: none;
-            font-size: 1.1em;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-        .cta-button:hover {
-            background-color: #45a049;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+        header { font-size: 2em; margin-bottom: 10px; }
+        nav a { margin: 0 10px; text-decoration: none; color: #007BFF; }
+        nav a:hover { text-decoration: underline; }
+        .welcome-message { font-size: 1.5em; margin: 20px 0; }
+        .description { font-size: 1.2em; margin-bottom: 20px; }
+        .cta-button { display: inline-block; padding: 10px 20px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 5px; }
+        .cta-button:hover { background-color: #0056b3; }
+        footer { margin-top: 20px; font-size: 0.8em; color: #666; }
     </style>
 </head>
 <body>
@@ -90,6 +45,7 @@
     <main>
         <div class="welcome-message">¡Bienvenidos a Melany´s Tienda!</div>
         <p class="description">Tu espacio para encontrar productos únicos y de calidad.</p>
+        <p class="description"><strong>Instancia IP:</strong> $INSTANCE_IP</p>
         <a href="#explore" class="cta-button">Explora ahora</a>
     </main>
     <footer>
@@ -97,4 +53,6 @@
     </footer>
 </body>
 </html>
+EOL
+
 
