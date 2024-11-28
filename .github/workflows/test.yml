@@ -1,0 +1,39 @@
+name: QA Deployment
+
+on:
+  push:
+    branches:
+      - test
+
+jobs:
+  qa_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Configuración inicial de SSH
+      - name: 'Configurando SSH'
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
+          chmod 400 key.pem
+
+      # Desplegar en la instancia de QA
+      - name: "Desplegar en QA"
+        run: |
+          echo "Desplegando en QA - Instancia de prueba"
+          
+          # Instalar Git si no está disponible
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-207-211-41.compute-1.amazonaws.com "sudo yum update -y && sudo yum install -y git || sudo apt update && sudo apt install -y git"
+          
+          # Eliminar contenido existente
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-207-211-41.compute-1.amazonaws.com "rm -rf /web/AWS"
+          
+          # Clonar el repositorio
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-207-211-41.compute-1.amazonaws.com "git clone https://github.com/Fernandonov21/AWS.git /web/AWS"
+          
+          # Procesar HTML dinámico
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-207-211-41.compute-1.amazonaws.com "HOSTNAME=\$(hostname -f) && sed -i 's/{{HOSTNAME}}/\$HOSTNAME/g' /web/AWS/index.html"
+
+      # Limpieza
+      - name: 'Eliminar clave SSH'
+        if: always()
+        run: rm key.pem

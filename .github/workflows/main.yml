@@ -23,28 +23,27 @@ jobs:
           chmod 400 key.pem
 
       # Desplegar en las instancias de producción
-            - name: "Desplegar en Producción - {{ matrix.instance.name }}"
+      - name: "Desplegar en Producción"
         run: |
-          echo "Desplegando en Producción - {{ matrix.instance.name }}"
+          echo "Desplegando en ${{ matrix.instance.name }}"
 
-          # Instalar Git si no está disponible (usando solo yum)
+          # Instalar Git si no está disponible
           ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
-            sudo yum update -y && 
+            sudo yum update -y &&
             sudo yum install -y git || echo 'Git ya está instalado'
           "
-          
+
           # Eliminar contenido existente
           ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "rm -rf /web/AWS"
-          
+
           # Clonar el repositorio
           ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "git clone https://github.com/Fernandonov21/AWS.git /web/AWS"
-          
+
           # Procesar HTML dinámico
           ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
             HOSTNAME=\$(hostname -f) &&
             sed -i 's/{{HOSTNAME}}/\$HOSTNAME/g' /web/AWS/index.html
           "
-
 
       # Limpieza
       - name: 'Eliminar clave SSH'
