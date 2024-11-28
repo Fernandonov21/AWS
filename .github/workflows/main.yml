@@ -1,13 +1,12 @@
-name: Deployment Workflow
+name: Production Deployment
 
 on:
   push:
     branches:
       - main
-      - test
 
 jobs:
-  deploy:
+  production_deploy:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -15,54 +14,32 @@ jobs:
           - { name: "Instancia 1", address: "ec2-34-238-38-153.compute-1.amazonaws.com" }
           - { name: "Instancia 2", address: "ec2-44-208-35-50.compute-1.amazonaws.com" }
           - { name: "Instancia 3", address: "ec2-54-164-223-131.compute-1.amazonaws.com" }
-        branch: [main, test]
 
     steps:
       # Configuración inicial de SSH
-      - name: Configurando SSH
+      - name: 'Configurando SSH'
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 400 key.pem
 
-      # Desplegar en las instancias
-      - name: Desplegar en ${{ matrix.branch }} - ${{ matrix.instance.name }}
+      # Desplegar en las instancias de producción
+      - name: "Desplegar en Producción - {{ matrix.instance.name }}"
         run: |
-          echo "Desplegando en ${{ matrix.instance.name }} para la rama ${{ matrix.branch }}"
+          echo "Desplegando en Producción - {{ matrix.instance.name }}"
 
-          # Asegurar directorio limpio y permisos
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
-            if [ -d /web/AWS ]; then
-              sudo rm -rf /web/AWS
-            fi &&
-            mkdir -p /web/AWS &&
-            sudo chown ec2-user:ec2-user /web/AWS
-          "
-
-          # Verificar e instalar Git si es necesario
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
-            if ! command -v git &> /dev/null; then
-              echo 'Git no está instalado, instalando...' &&
-              sudo yum install -y git
-            fi
-          "
-
-          # Clonar el repositorio y configurar la rama
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
-            git clone https://github.com/Fernandonov21/AWS.git /web/AWS &&
-            cd /web/AWS &&
-            git fetch origin &&
-            git checkout ${{ matrix.branch }} &&
-            git reset --hard origin/${{ matrix.branch }}
-          "
-
+          # Instalar Git si no está disponible
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "sudo yum update -y && sudo yum install -y git || sudo apt update && sudo apt install -y git"
+          
+          # Eliminar contenido existente
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "rm -rf /web/AWS"
+          
+          # Clonar el repositorio
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "git clone https://github.com/Fernandonov21/AWS.git /web/AWS"
+          
           # Procesar HTML dinámico
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
-            HOSTNAME=\$(hostname -f) &&
-            sed -i 's/{{HOSTNAME}}/\$HOSTNAME/g' /web/AWS/index.html
-          "
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "HOSTNAME=\$(hostname -f) && sed -i 's/{{HOSTNAME}}/\$HOSTNAME/g' /web/AWS/index.html"
 
-      # Limpieza segura de la clave SSH
-      - name: Eliminar clave SSH
+      # Limpieza
+      - name: 'Eliminar clave SSH'
         if: always()
-        run: |
-          shred -u key.pem
+        run: rm key.pem
