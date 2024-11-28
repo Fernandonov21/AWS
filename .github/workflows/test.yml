@@ -22,20 +22,20 @@ jobs:
           echo "Desplegando en QA - Instancia de prueba"
           
           # Instalar Git si no está disponible
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-207-211-41.compute-1.amazonaws.com "
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-1-172-126.compute-1.amazonaws.com "
             sudo yum update -y &&
             sudo yum install -y git || echo 'Git ya está instalado'
           "
           
           # Preparar el directorio de despliegue
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-207-211-41.compute-1.amazonaws.com "
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-1-172-126.compute-1.amazonaws.com "
             if [ ! -d /web/AWS ]; then
               git clone https://github.com/Fernandonov21/AWS.git /web/AWS
             fi
           "
 
           # Cambiar a la rama `test` y hacer pull
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-207-211-41.compute-1.amazonaws.com "
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-1-172-126.compute-1.amazonaws.com "
             cd /web/AWS &&
             git fetch origin &&
             git checkout test &&
@@ -43,7 +43,7 @@ jobs:
           "
 
           # Procesar HTML dinámico
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-207-211-41.compute-1.amazonaws.com "
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-1-172-126.compute-1.amazonaws.com "
             HOSTNAME=\$(hostname -f) &&
             sed -i 's/{{HOSTNAME}}/\$HOSTNAME/g' /web/AWS/index.html
           "
