@@ -40,10 +40,7 @@ jobs:
             ssh -o StrictHostKeyChecking=no -i key.pem $host "git clone https://github.com/Fernandonov21/AWS.git /web/AWS"
             
             # Procesar HTML dinámico
-            ssh -o StrictHostKeyChecking=no -i key.pem $host <<EOF
-            HOSTNAME=\$(hostname -f)
-            sed -i "s/{{HOSTNAME}}/\$HOSTNAME/g" /web/AWS/index.html
-EOF
+            ssh -o StrictHostKeyChecking=no -i key.pem $host "HOSTNAME=\$(hostname -f) && sed -i 's/{{HOSTNAME}}/\$HOSTNAME/g' /web/AWS/index.html"
           done
 
       # Limpieza final
