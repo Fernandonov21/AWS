@@ -48,6 +48,20 @@ jobs:
             sed -i 's/{{HOSTNAME}}/\$HOSTNAME/g' /web/AWS/index.html
           "
 
+      # Crear un Pull Request de test a main
+      - name: 'Crear Pull Request de test a main'
+        run: |
+          echo "Creando Pull Request de test a main"
+          # Instalar GitHub CLI
+          sudo apt-get update
+          sudo apt-get install gh -y
+          
+          # Autenticarse con GitHub (usa el token de GitHub Actions)
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+          # Crear un Pull Request desde test hacia main
+          gh pr create --base main --head test --title "Merge test a main" --body "Despliegue desde test hacia main" --assignee @me
+
       # Limpieza
       - name: 'Eliminar clave SSH'
         if: always()
