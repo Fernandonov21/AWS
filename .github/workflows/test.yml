@@ -47,7 +47,7 @@ jobs:
             HOSTNAME=\$(hostname -f) &&
             sed -i 's/{{HOSTNAME}}/\$HOSTNAME/g' /web/AWS/index.html
           "
-      
+
       # Limpieza
       - name: 'Eliminar clave SSH'
         if: always()
