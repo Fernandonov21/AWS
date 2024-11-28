@@ -29,21 +29,24 @@ jobs:
         run: |
           echo "Desplegando en ${{ matrix.instance.name }} para la rama ${{ matrix.branch }}"
 
-          # Asegurar directorio limpio
+          # Asegurar directorio limpio y permisos
           ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
-            sudo rm -rf /web/AWS &&
+            if [ -d /web/AWS ]; then
+              sudo rm -rf /web/AWS
+            fi &&
             mkdir -p /web/AWS &&
             sudo chown ec2-user:ec2-user /web/AWS
           "
 
-          # Verificar instalación de Git
+          # Verificar e instalar Git si es necesario
           ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
             if ! command -v git &> /dev/null; then
+              echo 'Git no está instalado, instalando...' &&
               sudo yum install -y git
             fi
           "
 
-          # Clonar y configurar la rama
+          # Clonar el repositorio y configurar la rama
           ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
             git clone https://github.com/Fernandonov21/AWS.git /web/AWS &&
             cd /web/AWS &&
@@ -58,7 +61,8 @@ jobs:
             sed -i 's/{{HOSTNAME}}/\$HOSTNAME/g' /web/AWS/index.html
           "
 
-      # Limpieza
+      # Limpieza segura de la clave SSH
       - name: Eliminar clave SSH
         if: always()
-        run: rm key.pem
+        run: |
+          shred -u key.pem
