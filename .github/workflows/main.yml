@@ -22,15 +22,15 @@ jobs:
         id: config
         run: |
           if [ "${{ github.ref_name }}" == "main" ]; then
-            echo "hosts=ec2-user@ec2-44-208-35-50.compute-1.amazonaws.com ec2-user@ec2-34-238-38-153.compute-1.amazonaws.com ec2-user@ec2-54-164-223-131.compute-1.amazonaws.com" >> $GITHUB_ENV
+            echo "hosts='ec2-user@ec2-44-208-35-50.compute-1.amazonaws.com ec2-user@ec2-34-238-38-153.compute-1.amazonaws.com ec2-user@ec2-54-164-223-131.compute-1.amazonaws.com'" >> $GITHUB_ENV
           elif [ "${{ github.ref_name }}" == "test" ]; then
-            echo "hosts=ec2-user@ec2-52-207-211-41.compute-1.amazonaws.com" >> $GITHUB_ENV
+            echo "hosts='ec2-user@ec2-52-207-211-41.compute-1.amazonaws.com'" >> $GITHUB_ENV
           fi
 
       # Desplegar en las instancias correspondientes
       - name: 'Desplegar en las instancias'
         run: |
-          for host in $hosts; do
+          for host in ${{ env.hosts }}; do
             echo "Desplegando en $host"
             
             # Eliminar contenido existente
@@ -41,8 +41,8 @@ jobs:
             
             # Procesar HTML dinámico
             ssh -o StrictHostKeyChecking=no -i key.pem $host <<EOF
-HOSTNAME=\$(hostname -f)
-sed -i "s/{{HOSTNAME}}/\$HOSTNAME/g" /web/AWS/index.html
+            HOSTNAME=\$(hostname -f)
+            sed -i "s/{{HOSTNAME}}/\$HOSTNAME/g" /web/AWS/index.html
 EOF
           done
 
