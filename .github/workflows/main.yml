@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - test
 
 jobs:
   production_deploy:
@@ -14,6 +15,7 @@ jobs:
           - { name: "Instancia 1", address: "ec2-34-238-38-153.compute-1.amazonaws.com" }
           - { name: "Instancia 2", address: "ec2-44-208-35-50.compute-1.amazonaws.com" }
           - { name: "Instancia 3", address: "ec2-54-164-223-131.compute-1.amazonaws.com" }
+        branch: [main, test]
 
     steps:
       # Configuración inicial de SSH
@@ -22,8 +24,8 @@ jobs:
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 400 key.pem
 
-      # Desplegar en las instancias de producción
-      - name: "Desplegar en Producción"
+      # Desplegar en las instancias
+      - name: "Desplegar en ${{ matrix.branch }} - ${{ matrix.instance.name }}"
         run: |
           echo "Desplegando en ${{ matrix.instance.name }}"
 
@@ -37,7 +39,12 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "rm -rf /web/AWS"
 
           # Clonar el repositorio
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "git clone https://github.com/Fernandonov21/AWS.git /web/AWS"
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
+            git clone https://github.com/Fernandonov21/AWS.git /web/AWS &&
+            cd /web/AWS &&
+            git checkout ${{ matrix.branch }} &&
+            git pull origin ${{ matrix.branch }}
+          "
 
           # Procesar HTML dinámico
           ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
