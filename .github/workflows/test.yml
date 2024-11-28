@@ -48,13 +48,6 @@ jobs:
             sed -i 's/{{HOSTNAME}}/\$HOSTNAME/g' /web/AWS/index.html
           "
 
-      # Crear Pull Request
-      - name: 'Crear Pull Request'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr create --base main --head test --title "QA: Solicitud de fusión de cambios" --body "Revisar los cambios realizados en QA antes de fusionarlos a producción (rama main)."
-
       # Limpieza
       - name: 'Eliminar clave SSH'
         if: always()
