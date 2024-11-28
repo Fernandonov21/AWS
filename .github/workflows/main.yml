@@ -1,4 +1,4 @@
-name: Production Deployment
+name: Deployment Workflow
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
       - test
 
 jobs:
-  production_deploy:
+  deploy:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -19,31 +19,37 @@ jobs:
 
     steps:
       # Configuración inicial de SSH
-      - name: 'Configurando SSH'
+      - name: Configurando SSH
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 400 key.pem
 
       # Desplegar en las instancias
-      - name: "Desplegar en ${{ matrix.branch }} - ${{ matrix.instance.name }}"
+      - name: Desplegar en ${{ matrix.branch }} - ${{ matrix.instance.name }}
         run: |
-          echo "Desplegando en ${{ matrix.instance.name }}"
+          echo "Desplegando en ${{ matrix.instance.name }} para la rama ${{ matrix.branch }}"
 
-          # Instalar Git si no está disponible
+          # Asegurar directorio limpio
           ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
-            sudo yum update -y &&
-            sudo yum install -y git || echo 'Git ya está instalado'
+            sudo rm -rf /web/AWS &&
+            mkdir -p /web/AWS &&
+            sudo chown ec2-user:ec2-user /web/AWS
           "
 
-          # Eliminar contenido existente
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "rm -rf /web/AWS"
+          # Verificar instalación de Git
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
+            if ! command -v git &> /dev/null; then
+              sudo yum install -y git
+            fi
+          "
 
-          # Clonar el repositorio
+          # Clonar y configurar la rama
           ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
             git clone https://github.com/Fernandonov21/AWS.git /web/AWS &&
             cd /web/AWS &&
+            git fetch origin &&
             git checkout ${{ matrix.branch }} &&
-            git pull origin ${{ matrix.branch }}
+            git reset --hard origin/${{ matrix.branch }}
           "
 
           # Procesar HTML dinámico
@@ -53,6 +59,6 @@ jobs:
           "
 
       # Limpieza
-      - name: 'Eliminar clave SSH'
+      - name: Eliminar clave SSH
         if: always()
         run: rm key.pem
