@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         ec2_instance: 
-          - ec2-user@ec2-54-173-21-111.compute-1.amazonaws.com
+          - ec2-54-173-21-111.compute-1.amazonaws.com
 
     steps:
       - name: Configurando SSH
