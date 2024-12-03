@@ -1,4 +1,4 @@
-name: Production Deployment
+name: Actualizar EC2 en commit a main
 
 on:
   push:
@@ -6,46 +6,33 @@ on:
       - main
 
 jobs:
-  production_deploy:
+  update-ec2:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        instance:
-          - { name: "Instancia 1", address: "ec2-3-85-235-61.compute-1.amazonaws.com" }
-          - { name: "Instancia 2", address: "ec2-34-205-69-215.compute-1.amazonaws.com" }
-          - { name: "Instancia 3", address: "ec2-44-204-47-165.compute-1.amazonaws.com" }
+        ec2_instance: 
+          - ec2-user@ec2-34-205-73-232.compute-1.amazonaws.com
+          - ec2-user@ec2-44-204-26-26.compute-1.amazonaws.com
+          - ec2-user@ec2-18-234-190-41.compute-1.amazonaws.com
 
     steps:
-      # Configuración inicial de SSH
-      - name: 'Configurando SSH'
+      - name: Configurando SSH
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 400 key.pem
 
-      # Desplegar en las instancias de producción
-      - name: "Desplegar en Producción"
+      - name: Actualizar repositorio en EC2
         run: |
-          echo "Desplegando en ${{ matrix.instance.name }}"
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.ec2_instance }} "
+          git config --global --add safe.directory /web/AWS &&
+          cd /web/AWS &&
+          git reset --hard &&
+          git pull origin main"
 
-          # Instalar Git si no está disponible
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
-            sudo yum update -y &&
-            sudo yum install -y git || echo 'Git ya está instalado'
-          "
+      - name: Reiniciar Servicio
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.ec2_instance }} "sudo systemctl restart nginx"
 
-          # Eliminar contenido existente
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "rm -rf /web/AWS"
-
-          # Clonar el repositorio
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "git clone https://github.com/Fernandonov21/AWS.git /web/AWS"
-
-          # Procesar HTML dinámico
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.instance.address }} "
-            HOSTNAME=\$(hostname -f) &&
-            sed -i 's/{{HOSTNAME}}/\$HOSTNAME/g' /web/AWS/index.html
-          "
-
-      # Limpieza
-      - name: 'Eliminar clave SSH'
-        if: always()
+      - name: Eliminar clave SSH
         run: rm key.pem

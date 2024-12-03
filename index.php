@@ -1,3 +1,13 @@
+<?php
+// Mostrar el nombre del host
+$hostname = gethostname();
+echo "<h1>Host: $hostname</h1>";
+?>
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -79,7 +89,11 @@
 </head>
 <body>
     <header>
-        <h1>Melany Tienda</h1>
+        <h1><?php
+// Mostrar el nombre del host
+$hostname = gethostname();
+echo "<h1>Host: $hostname</h1>";
+?></h1>
     </header>
     <nav>
         <a href="#home">Inicio</a>

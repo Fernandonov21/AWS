@@ -1,4 +1,4 @@
-name: QA Deployment
+name: Actualizar EC2 en commit a test
 
 on:
   push:
@@ -6,49 +6,31 @@ on:
       - test
 
 jobs:
-  qa_deploy:
+  update-ec2:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        ec2_instance: 
+          - ec2-user@ec2-54-173-21-111.compute-1.amazonaws.com
+
     steps:
-      # Configuración inicial de SSH
-      - name: 'Configurando SSH'
+      - name: Configurando SSH
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 400 key.pem
 
-      # Desplegar en la instancia de QA
-      - name: "Desplegar en QA"
+      - name: Actualizar repositorio en EC2
         run: |
-          echo "Desplegando en QA - Instancia de prueba"
-          
-          # Instalar Git si no está disponible
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-1-172-126.compute-1.amazonaws.com "
-            sudo yum update -y &&
-            sudo yum install -y git || echo 'Git ya está instalado'
-          "
-          
-          # Preparar el directorio de despliegue
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-1-172-126.compute-1.amazonaws.com "
-            if [ ! -d /web/AWS ]; then
-              git clone https://github.com/Fernandonov21/AWS.git /web/AWS
-            fi
-          "
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.ec2_instance }} "
+          git config --global --add safe.directory /web/AWS &&
+          cd /web/AWS &&
+          git reset --hard &&
+          git pull origin test"
 
-          # Cambiar a la rama `test` y hacer pull
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-1-172-126.compute-1.amazonaws.com "
-            cd /web/AWS &&
-            git fetch origin &&
-            git checkout test &&
-            git pull origin test
-          "
+      - name: Reiniciar Servicio
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.ec2_instance }} "sudo systemctl restart nginx"
 
-          # Procesar HTML dinámico
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@ec2-52-1-172-126.compute-1.amazonaws.com "
-            HOSTNAME=\$(hostname -f) &&
-            sed -i 's/{{HOSTNAME}}/\$HOSTNAME/g' /web/AWS/index.html
-          "
-
-      # Limpieza
-      - name: 'Eliminar clave SSH'
-        if: always()
+      - name: Eliminar clave SSH
         run: rm key.pem
