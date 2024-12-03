@@ -96,7 +96,7 @@ echo "<h1>Host: $hostname</h1>";
 ?></h1>
     </header>
     <nav>
-        <a href="#home">Inicio</a>
+        <a href="#home">Inicios</a>
         <a href="#about">Nosotros</a>
         <a href="#services">Servicios</a>
         <a href="#contact">Contacto</a>
