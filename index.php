@@ -105,7 +105,7 @@ echo "<h1>Host: $hostname</h1>";
 
 
 
-        <div class="welcome-message">Nuevos cambios en produccion</div>
+        <div class="welcome-message">Nuevos cambios en produccion XD</div>
 
        
 

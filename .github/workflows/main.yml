@@ -1,37 +1,68 @@
-name: Actualizar EC2 en commit a main
+name: Deploy to EC2 (Production)
 
 on:
+  pull_request:
+    branches:
+      - main    # Este flujo se ejecutará cuando se haga un pull request hacia 'main'
   push:
     branches:
-      - main
+      - main    # También se ejecutará cuando haya un push directo a la rama 'main'
 
 jobs:
-  update-ec2:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        ec2_instance: 
-          - ec2-18-212-21-6.compute-1.amazonaws.com
-          - ec2-44-203-88-237.compute-1.amazonaws.com
-
     steps:
-      - name: Configurando SSH
-        run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
-          chmod 400 key.pem
+    # Paso 1: Clonar el código
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Actualizar repositorio en EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.ec2_instance }} "
-          git config --global --add safe.directory /web/AWS &&
-          cd /web/AWS &&
-          git reset --hard &&
-          git pull origin main"
+    # Paso 2: Configurar Docker
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
 
-      - name: Reiniciar Servicio
-        run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ matrix.ec2_instance }} "sudo systemctl restart nginx"
+    # Paso 3: Iniciar sesión en Docker Hub
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Eliminar clave SSH
-        run: rm key.pem
+    # Paso 4: Construir la imagen Docker
+    - name: Build Docker image
+      run: |
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/php-app:latest .
+
+    # Paso 5: Subir la imagen Docker a Docker Hub
+    - name: Push Docker image
+      run: |
+        docker push ${{ secrets.DOCKER_USERNAME }}/php-app:latest
+
+    # Paso 6: Desplegar en las instancias EC2 de Producción
+    - name: Deploy to Production EC2 instances
+      run: |
+        echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
+        chmod 400 key.pem
+        ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ secrets.EC2_PROD_IP_1 }} << EOF
+          # Detener el contenedor anterior
+          docker stop php-app || true
+          docker rm php-app || true
+
+          # Ejecutar el nuevo contenedor
+          docker run -d --name php-app -p 80:80 ${{ secrets.DOCKER_USERNAME }}/php-app:latest
+        EOF
+        ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ secrets.EC2_PROD_IP_2 }} << EOF
+          # Detener el contenedor anterior
+          docker stop php-app || true
+          docker rm php-app || true
+
+          # Ejecutar el nuevo contenedor
+          docker run -d --name php-app -p 80:80 ${{ secrets.DOCKER_USERNAME }}/php-app:latest
+        EOF
+      env:
+        EC2_PROD_IP_1: ${{ secrets.EC2_PROD_IP_1 }}
+        EC2_PROD_IP_2: ${{ secrets.EC2_PROD_IP_2 }}
+
+    # Paso 7: Eliminar la clave SSH
+    - name: Clean up SSH key
+      run: rm key.pem
