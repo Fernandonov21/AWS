@@ -1,7 +1,7 @@
 name: test Deploy pull request
 
 on:
-  push:
+  pull_request:
     branches:
       - test
 
