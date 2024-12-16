@@ -38,8 +38,8 @@ jobs:
     strategy:
       matrix:
         ec2_instance: 
-          - ec2-50-17-3-16.compute-1.amazonaws.com
-          - ec2-34-229-222-108.compute-1.amazonaws.com
+          - ec2-44-223-20-163.compute-1.amazonaws.com
+          - ec2-3-92-88-41.compute-1.amazonaws.com
 
     steps:
       - name: Set up SSH key
