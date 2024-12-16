@@ -105,7 +105,7 @@ echo "<h1>Host: $hostname</h1>";
 
 
 
-        <div class="welcome-message">cambio1</div>
+        <div class="welcome-message">pruebas</div>
 
        
 
